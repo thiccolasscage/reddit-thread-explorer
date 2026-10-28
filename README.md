@@ -42,12 +42,41 @@ npm test               # node test/parse.test.js: parser + exporters on fixtures
 npm run test:browser   # headless Chromium: bookmarklet, extension scripts, HTML tool paste fallback
 ```
 
-## Layout / editing
-- `lib/parse-old-reddit.js`: the shared parser, with a DOM adapter for the browser and a cheerio adapter for Node.
-- `lib/html-to-md-dom.js`: the browser HTML→MD converter. Node uses turndown, via `lib/node-parse.js`.
-- `lib/export.js`: renders MD / JSON / TXT / print HTML.
-- `lib/browser-ui.js`: the in-page toolbar.
-- After you edit `lib/`, run **`npm run build`**. It regenerates `bookmarklet.js`, `bookmarklet.min.txt`, `reddit-export.html` (from `scripts/reddit-export.template.html`) and `extension/lib/`.
+## Folder tree
+Files marked *(generated)* are rebuilt by `npm run build`. Don't edit them by hand.
+
+```text
+reddit-thread-explorer/
+├── lib/                          # shared source: edit here
+│   ├── parse-old-reddit.js       #   parser (DOM adapter for browser, cheerio adapter for Node)
+│   ├── html-to-md-dom.js         #   browser HTML→MD converter
+│   ├── node-parse.js             #   Node entry: cheerio + turndown
+│   ├── export.js                 #   MD / JSON / TXT / print-HTML renderers
+│   └── browser-ui.js             #   in-page toolbar
+├── extension/                    # 2. Firefox extension (MV2)
+│   ├── manifest.json
+│   ├── content.js
+│   └── lib/                      #   (generated) copies of lib/*.js
+├── scripts/
+│   ├── build-bookmarklet.js      #   `npm run build`
+│   └── reddit-export.template.html  # template for reddit-export.html
+├── fixtures/
+│   └── sample-thread.html        # saved old.reddit page used by the tests
+├── test/
+│   ├── parse.test.js             # `npm test`
+│   └── browser.test.js           # `npm run test:browser`
+├── bookmarklet.js                # 1. (generated) readable bookmarklet source
+├── bookmarklet.min.txt           # 1. (generated) javascript: URL
+├── reddit-export.html            # 1. (generated) single-file HTML tool
+├── cli.js                        # 3. CLI entry
+├── fetch-thread.js               # 3. Playwright fetch using the saved login profile
+├── login.js                      # 3. one-time Reddit login → .reddit-profile/
+├── CLAUDE.md                     # agent handoff
+├── package.json
+└── package-lock.json
+```
+
+Not committed: `node_modules/`, `out/` (CLI output), `.env`, `.reddit-profile/`.
 
 ## Output shape
 `{ url, fetchedAt, post:{id, subreddit, title, author, score, createdAt, body(md), flair, nsfw, linkUrl?}, comments:[{id, author, score, createdAt, body(md), depth, replies:[…], stickied?, collapsed?}], stats:{commentsParsed, moreLinksSkipped} }`
