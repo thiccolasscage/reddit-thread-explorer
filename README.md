@@ -71,6 +71,7 @@ reddit-thread-explorer/
 ├── cli.js                        # 3. CLI entry
 ├── fetch-thread.js               # 3. Playwright fetch using the saved login profile
 ├── login.js                      # 3. one-time Reddit login → .reddit-profile/
+├── CLAUDE.md                     # agent handoff
 ├── package.json
 └── package-lock.json
 ```
