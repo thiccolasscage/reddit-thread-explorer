@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>old.reddit thread export</title>
+<style>
+  :root{--o:#ff4500;--bg:#0f1115;--card:#181b21;--fg:#e8e8e8;--mut:#9aa0a6}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+  main{max-width:860px;margin:0 auto;padding:28px 18px 60px} h1{margin:0 0 4px;font-size:24px} h1 span{color:var(--o)}
+  .sub{color:var(--mut);margin:0 0 22px} section{background:var(--card);border:1px solid #262a33;border-radius:10px;padding:16px 18px;margin:0 0 16px}
+  h2{font-size:16px;margin:0 0 10px} ol{margin:6px 0 0;padding-left:20px} li{margin:4px 0}
+  input,textarea{width:100%;background:#0b0d10;color:var(--fg);border:1px solid #333a45;border-radius:6px;padding:9px 10px;font:13px ui-monospace,Menlo,monospace}
+  textarea{min-height:140px;resize:vertical} .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+  button,.btn{background:var(--o);color:#fff;border:0;border-radius:6px;padding:8px 13px;font:600 13px system-ui,sans-serif;cursor:pointer;text-decoration:none;display:inline-block}
+  button.sec{background:#2c313b} .bm{background:#2c313b;border:2px dashed var(--o);cursor:grab}
+  .out{margin-top:8px;color:var(--mut);font-size:13px;word-break:break-all} .err{color:#ff7b72} .ok{color:#7ee787}
+  pre{background:#0b0d10;border:1px solid #262a33;border-radius:6px;padding:10px;max-height:320px;overflow:auto;font:12px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap}
+  code{background:#0b0d10;padding:1px 5px;border-radius:4px;font-size:12.5px} small{color:var(--mut)}
+</style>
+</head>
+<body>
+<main>
+  <h1><span>old.reddit</span> thread → MD / JSON / TXT / PDF</h1>
+  <p class="sub">Runs in your own logged-in browser. No public <code>.json</code>, no server. old.reddit.com comment threads only.</p>
+
+  <section>
+    <h2>1 · Install the bookmarklet (once)</h2>
+    <div class="row">
+      <a class="btn bm" id="bm" href="javascript:(function(){(function(T){%22use strict%22;function w(t){if(!t)throw new Error(%22No URL given%22);var r=String(t).trim();/^https?:\/\//i.test(r)||(r=%22https://%22+r);var e=new URL(r),i=e.hostname.toLowerCase();if(i===%22redd.it%22)throw new Error(%22Short redd.it links are not supported; open the thread and copy its full URL%22);if(!/(^|\.)reddit\.com$/.test(i))throw new Error(%22Not a reddit.com URL: %22+t);if(e.protocol=%22https:%22,e.hostname=%22old.reddit.com%22,!/\/comments\/[a-z0-9]+/i.test(e.pathname))throw new Error(%22Not a thread (/comments/) URL: %22+t);e.hash=%22%22;var m=new URLSearchParams;return[%22sort%22,%22limit%22,%22context%22,%22depth%22].forEach(function(b){e.searchParams.has(b)&amp;&amp;m.set(b,e.searchParams.get(b))}),e.search=m.toString()?%22?%22+m.toString():%22%22,e.toString()}function x(t){return{root:t,find:function(e,i){return Array.prototype.slice.call((e||t).querySelectorAll(i))},children:function(e,i){return e?Array.prototype.filter.call(e.children,function(m){return r(m.classList,i)}):[]},attr:function(e,i){return e?e.getAttribute(i):null},text:function(e){return e?(e.textContent||%22%22).trim():%22%22},html:function(e){return e?e.innerHTML:%22%22},node:function(e){return e},hasClass:function(e,i){return!!e&amp;&amp;e.classList.contains(i)}};function r(e,i){return i.split(%22.%22).filter(Boolean).every(function(m){return e.contains(m)})}}function U(t){return{root:null,find:function(r,e){return(r?t(r).find(e):t(e)).toArray()},children:function(r,e){return r?t(r).children(%22.%22+e.split(%22.%22).filter(Boolean).join(%22.%22)).toArray():[]},attr:function(r,e){var i=r?t(r).attr(e):void 0;return i===void 0?null:i},text:function(r){return r?t(r).text().trim():%22%22},html:function(r){return r&amp;&amp;t(r).html()||%22%22},node:function(r){return r},hasClass:function(r,e){return!!r&amp;&amp;t(r).hasClass(e)}}}function u(t){return t&amp;&amp;t.length?t[0]:null}function s(t){if(t==null||t===%22%22)return null;var r=parseInt(String(t).replace(/[^0-9-]/g,%22%22),10);return isNaN(r)?null:r}function g(t){if(!t)return null;var r=new Date(t);return isNaN(r.getTime())?null:r.toISOString()}function j(t){return t?String(t).replace(/^t[0-9]_/,%22%22):%22%22}function f(t){return t&amp;&amp;t!==%22[deleted]%22?/^u\//.test(t)?t:%22u/%22+t:%22[deleted]%22}function E(t,r){return u(t.children(r,%22entry%22))}function l(t,r,e){if(!r)return%22%22;var i=u(t.find(r,%22.usertext-body .md%22));return i?e(t.html(i),t.node(i)).trim():%22%22}function d(t,r,e){var i=s(t.attr(r,%22data-score%22));if(i!==null)return i;if(e){var m=u(t.find(e,%22.tagline .score.unvoted%22))||u(t.find(e,%22.score.unvoted%22))||u(t.find(e,%22.score%22));if(m){var b=s(t.attr(m,%22title%22));if(b!==null)return b;var C=s(t.text(m));if(C!==null)return C}}var S=u(t.children(r,%22midcol%22));if(S){var y=u(t.find(S,%22.score.unvoted%22));if(y){var R=s(t.attr(y,%22title%22));if(R===null&amp;&amp;(R=s(t.text(y))),R!==null)return R}}return null}function p(t,r){if(!r)return null;var e=u(t.find(r,%22.tagline time[datetime]%22))||u(t.find(r,%22time[datetime]%22));return e?g(t.attr(e,%22datetime%22)):null}function k(t,r,e){var i=t.attr(r,%22data-author%22);if(!i&amp;&amp;e){var m=u(t.find(e,%22.tagline a.author%22))||u(t.find(e,%22a.author%22));i=m?t.text(m):null}return f(i)}function h(t,r){return t.hasClass(r,%22morechildren%22)||t.hasClass(r,%22morerecursion%22)}function o(t,r,e,i,m,b){var C=E(t,r),S=t.hasClass(r,%22deleted%22),y={id:j(t.attr(r,%22data-fullname%22)||t.attr(r,%22id%22)),author:S?%22[deleted]%22:k(t,r,C),score:d(t,r,C),createdAt:p(t,C),body:l(t,C,i),depth:e,replies:[]};if(t.hasClass(r,%22stickied%22)&amp;&amp;(y.stickied=!0),t.hasClass(r,%22collapsed%22)&amp;&amp;(y.collapsed=!0),S&amp;&amp;!y.body&amp;&amp;(y.body=%22[deleted]%22),m.count++,b.maxDepth==null||e&lt;b.maxDepth){var R=u(t.children(r,%22child%22)),P=R?u(t.children(R,%22sitetable%22)):null;y.replies=a(t,P,e+1,i,m,b)}return y}function a(t,r,e,i,m,b){if(!r)return[];var C=[];return t.children(r,%22thing%22).forEach(function(S){if(h(t,S)){m.more++;return}t.hasClass(S,%22comment%22)&amp;&amp;C.push(o(t,S,e,i,m,b))}),C}function n(t,r){var e=u(t.find(null,%22%23siteTable .thing.link%22))||u(t.find(null,%22.thing.link%22));if(!e)throw new Error(%22No post found (%23siteTable .thing.link). Is this an old.reddit.com comments page?%22);var i=E(t,e)||e,m=u(t.find(i,%22a.title%22))||u(t.find(e,%22a.title%22)),b=u(t.find(i,%22.linkflairlabel%22)),C=b?t.attr(b,%22title%22)||t.text(b):null,S=t.attr(e,%22data-subreddit%22);if(!S){var y=u(t.find(i,%22a.subreddit%22));S=y?t.text(y).replace(/^\/?r\//,%22%22):%22%22}var R={id:j(t.attr(e,%22data-fullnameid%22)||t.attr(e,%22data-fullname%22)||t.attr(e,%22id%22)),subreddit:S||%22%22,title:m?t.text(m):%22%22,author:k(t,e,i),score:d(t,e,i),createdAt:g(t.attr(e,%22data-timestamp%22)?Number(t.attr(e,%22data-timestamp%22)):null)||p(t,i),body:l(t,i,r),flair:C||null,nsfw:t.attr(e,%22data-nsfw%22)===%22true%22||t.hasClass(e,%22over18%22)},P=t.attr(e,%22data-url%22);P&amp;&amp;!/\/comments\//.test(P)&amp;&amp;(R.linkUrl=/^\//.test(P)?%22https://old.reddit.com%22+P:P);var $=t.attr(e,%22data-permalink%22);return{post:R,permalink:$?%22https://old.reddit.com%22+$:null}}function c(t,r){r=r||{};var e=r.toMarkdown||function(R,P){return P&amp;&amp;P.textContent!=null?P.textContent:String(R).replace(/&lt;[^&gt;]+&gt;/g,%22%22)},i=n(t,e),m=u(t.find(null,%22.commentarea%22)),b=m?u(t.children(m,%22sitetable%22)):null,C={count:0,more:0},S=a(t,b,0,e,C,r),y=r.url||i.permalink||%22%22;try{y&amp;&amp;(y=w(y))}catch(R){}return{url:y,fetchedAt:new Date().toISOString(),post:i.post,comments:S,stats:{commentsParsed:C.count,moreLinksSkipped:C.more}}}function v(t,r){return c(x(t),r)}function N(t,r){return c(U(t),r)}function L(t){return(t||[]).reduce(function(r,e){return r+1+L(e.replies)},0)}var O={normalizeOldRedditUrl:w,parseThread:c,parseDocument:v,parseCheerio:N,domAdapter:x,cheerioAdapter:U,countComments:L};typeof module!=%22undefined%22&amp;&amp;module.exports?module.exports=O:T.RedditParse=O})(typeof globalThis!=%22undefined%22?globalThis:this),function(T){%22use strict%22;function w(s,g){if(g=g||{list:[]},s.nodeType===3)return s.nodeValue.replace(/\s+/g,%22 %22);if(s.nodeType!==1)return%22%22;var j=s.tagName.toLowerCase(),f=function(n){return Array.prototype.map.call(s.childNodes,function(c){return w(c,n||g)}).join(%22%22)};switch(j){case%22p%22:return`%0A%0A`+f().trim()+`%0A%0A`;case%22br%22:return`  %0A`;case%22strong%22:case%22b%22:return%22**%22+f()+%22**%22;case%22em%22:case%22i%22:return%22*%22+f()+%22*%22;case%22del%22:case%22s%22:return%22~~%22+f()+%22~~%22;case%22sup%22:return%22^(%22+f()+%22)%22;case%22code%22:return s.parentNode&amp;&amp;s.parentNode.tagName&amp;&amp;s.parentNode.tagName.toLowerCase()===%22pre%22?s.textContent:%22`%22+s.textContent+%22`%22;case%22pre%22:return%22\n\n```\n%22+s.textContent.replace(/\n$/,%22%22)+%22\n```\n\n%22;case%22a%22:{var E=s.getAttribute(%22href%22)||%22%22;E.charAt(0)===%22/%22&amp;&amp;(E=%22https://old.reddit.com%22+E);var l=f().trim();return E?%22[%22+(l||E)+%22](%22+E+%22)%22:l}case%22h1%22:case%22h2%22:case%22h3%22:case%22h4%22:case%22h5%22:case%22h6%22:return`%0A%0A`+%22%23%23%23%23%23%23%22.slice(0,+j[1])+%22 %22+f().trim()+`%0A%0A`;case%22hr%22:return`%0A%0A---%0A%0A`;case%22blockquote%22:return`%0A%0A`+x(s).split(`%0A`).map(function(n){return%22&gt; %22+n}).join(`%0A`)+`%0A%0A`;case%22ul%22:case%22ol%22:{var d=0,p=j===%22ol%22,k=g.list.length,h=Array.prototype.filter.call(s.children,function(n){return n.tagName.toLowerCase()===%22li%22}).map(function(n){d++;var c=Array.prototype.map.call(n.childNodes,function(N){return w(N,{list:g.list.concat(j)})}).join(%22%22).replace(/\n{3,}/g,`%0A%0A`).trim(),v=new Array(k+1).join(%22    %22);return v+(p?d+%22. %22:%22- %22)+c.replace(/\n/g,`%0A`+v+%22  %22)});return`%0A%0A`+h.join(`%0A`)+`%0A%0A`}case%22table%22:{var o=Array.prototype.map.call(s.querySelectorAll(%22tr%22),function(n){return%22| %22+Array.prototype.map.call(n.children,function(c){return x(c).replace(/\|/g,%22\\|%22).replace(/\n/g,%22 %22)}).join(%22 | %22)+%22 |%22});if(o.length){var a=(o[0].match(/ \| /g)||[]).length+1;o.splice(1,0,%22|%22+new Array(a+1).join(%22 --- |%22))}return`%0A%0A`+o.join(`%0A`)+`%0A%0A`}case%22img%22:return%22![%22+(s.getAttribute(%22alt%22)||%22%22)+%22](%22+(s.getAttribute(%22src%22)||%22%22)+%22)%22;case%22script%22:case%22style%22:return%22%22;default:return f()}}function x(s){return Array.prototype.map.call(s.childNodes,function(g){return w(g)}).join(%22%22).replace(/[ \t]+\n/g,function(g){return/  \n$/.test(g)?`  %0A`:`%0A`}).replace(/\n{3,}/g,`%0A%0A`).trim()}function U(s,g){return g||(g=new DOMParser().parseFromString(String(s),%22text/html%22).body),x(g)}var u={htmlToMarkdown:U};typeof module!=%22undefined%22&amp;&amp;module.exports?module.exports=u:T.RedditHtmlToMd=u}(typeof globalThis!=%22undefined%22?globalThis:this),function(T){%22use strict%22;function w(o){return o==null?%22?%22:String(o)}function x(o){return o?o.replace(%22T%22,%22 %22).replace(/\.\d+Z$/,%22Z%22):%22unknown date%22}function U(o,a){return o.split(`%0A`).map(function(n){return a+n}).join(`%0A`)}function u(o){return JSON.stringify(o,null,2)+`%0A`}function s(o){var a=o.post,n=[];n.push(%22%23 %22+(a.title||%22(untitled)%22)),n.push(%22%22);var c=[%22r/%22+a.subreddit,a.author,w(a.score)+%22 points%22,x(a.createdAt)];return a.flair&amp;&amp;c.push(%22flair: %22+a.flair),a.nsfw&amp;&amp;c.push(%22NSFW%22),n.push(%22*%22+c.join(%22 \xB7 %22)+%22*  %22),n.push(%22Source: &lt;%22+o.url+%22&gt;  %22),n.push(%22Exported: %22+x(o.fetchedAt)),a.linkUrl&amp;&amp;(n.push(%22%22),n.push(%22Link: &lt;%22+a.linkUrl+%22&gt;%22)),a.body&amp;&amp;(n.push(%22%22),n.push(a.body)),n.push(%22%22),n.push(%22---%22),n.push(%22%22),n.push(%22%23%23 Comments (%22+d(o.comments)+%22)%22),n.push(%22%22),function v(N){N.forEach(function(L){var O=new Array(L.depth+1).join(%22&gt; %22);n.push(O+%22**%22+L.author+%22** \xB7 %22+w(L.score)+%22 pts \xB7 %22+x(L.createdAt)),n.push(O.replace(/ $/,%22%22)),n.push(U(L.body||%22%22,O)),n.push(%22%22),v(L.replies||[])})}(o.comments||[]),n.join(`%0A`).replace(/\n{3,}/g,`%0A%0A`)+`%0A`}function g(o){return String(o||%22%22).replace(/```[a-z]*\n?/g,%22%22).replace(/!\[([^\]]*)\]\(([^)]+)\)/g,%22$1 ($2)%22).replace(/\[([^\]]+)\]\(([^)]+)\)/g,function(a,n,c){return n===c?n:n+%22 (%22+c+%22)%22}).replace(/(\*\*|__)(.*?)\1/g,%22$2%22).replace(/(^|[^*])\*([^*\n]+)\*/g,%22$1$2%22).replace(/~~(.*?)~~/g,%22$1%22).replace(/`([^`]+)`/g,%22$1%22).replace(/^%23{1,6}\s+/gm,%22%22).replace(/^&gt;\s?/gm,%22%22).replace(/\\([\\`*_{}\[\]()%23+\-.!&gt;|])/g,%22$1%22)}function j(o){var a=o.post,n=[];return n.push(a.title||%22(untitled)%22),n.push(%22r/%22+a.subreddit+%22 | %22+a.author+%22 | %22+w(a.score)+%22 points | %22+x(a.createdAt)+(a.nsfw?%22 | NSFW%22:%22%22)),n.push(%22Source: %22+o.url),a.linkUrl&amp;&amp;n.push(%22Link: %22+a.linkUrl),a.body&amp;&amp;(n.push(%22%22),n.push(g(a.body))),n.push(%22%22),n.push(%22==== Comments (%22+d(o.comments)+%22) ====%22),function c(v){v.forEach(function(N){var L=new Array(N.depth+1).join(%22    %22);n.push(%22%22),n.push(L+N.author+%22 | %22+w(N.score)+%22 pts | %22+x(N.createdAt)),n.push(U(g(N.body),L)),c(N.replies||[])})}(o.comments||[]),n.join(`%0A`)+`%0A`}function f(o){return String(o==null?%22%22:o).replace(/&amp;/g,%22&amp;amp;%22).replace(/&lt;/g,%22&amp;lt;%22).replace(/&gt;/g,%22&amp;gt;%22).replace(/%22/g,%22&amp;quot;%22)}function E(o){var a=String(o||%22%22).split(/\n{2,}/);return a.map(function(n){if(/^```/.test(n))return%22&lt;pre&gt;%22+f(n.replace(/^```[a-z]*\n?|```$/g,%22%22))+%22&lt;/pre&gt;%22;var c=f(n).replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g,'&lt;a href=%22$2%22&gt;$1&lt;/a&gt;').replace(/\*\*(.+?)\*\*/g,%22&lt;strong&gt;$1&lt;/strong&gt;%22).replace(/(^|[^*])\*([^*\n]+)\*/g,%22$1&lt;em&gt;$2&lt;/em&gt;%22).replace(/~~(.+?)~~/g,%22&lt;del&gt;$1&lt;/del&gt;%22).replace(/`([^`]+)`/g,%22&lt;code&gt;$1&lt;/code&gt;%22);return/^&amp;gt; ?/.test(n)?%22&lt;blockquote&gt;%22+c.replace(/^&amp;gt; ?/gm,%22%22).replace(/\n/g,%22&lt;br&gt;%22)+%22&lt;/blockquote&gt;%22:%22&lt;p&gt;%22+c.replace(/\n/g,%22&lt;br&gt;%22)+%22&lt;/p&gt;%22}).join(`%0A`)}function l(o){var a=o.post,n=%22body{font:14px/1.5 Georgia,serif;max-width:780px;margin:24px auto;color:%23111;padding:0 16px}h1{font-size:22px;margin:0 0 4px}.meta{color:%23555;font:12px/1.4 system-ui,sans-serif;margin-bottom:12px}.c{border-left:2px solid %23ccc;padding-left:10px;margin:10px 0 0 0;break-inside:avoid-page}.c .c{margin-left:8px}.a{font:600 12px system-ui,sans-serif;color:%23246}.a span{font-weight:400;color:%23777}pre{white-space:pre-wrap;background:%23f4f4f4;padding:8px}blockquote{color:%23555;border-left:3px solid %23ddd;margin:0;padding-left:8px}a{color:%231a5fb4;word-break:break-all}@page{margin:14mm}%22;function c(v){return'&lt;div class=%22c%22&gt;&lt;div class=%22a%22&gt;'+f(v.author)+%22 &lt;span&gt;\xB7 %22+f(w(v.score))+%22 pts \xB7 %22+f(x(v.createdAt))+%22&lt;/span&gt;&lt;/div&gt;%22+E(v.body)+(v.replies||[]).map(c).join(%22%22)+%22&lt;/div&gt;%22}return'&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=%22utf-8%22&gt;&lt;title&gt;'+f(a.title)+%22&lt;/title&gt;&lt;style&gt;%22+n+%22&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;%22+f(a.title)+'&lt;/h1&gt;&lt;div class=%22meta%22&gt;r/'+f(a.subreddit)+%22 \xB7 %22+f(a.author)+%22 \xB7 %22+f(w(a.score))+%22 points \xB7 %22+f(x(a.createdAt))+(a.flair?%22 \xB7 %22+f(a.flair):%22%22)+(a.nsfw?%22 \xB7 NSFW%22:%22%22)+%22&lt;br&gt;%22+f(o.url)+%22&lt;/div&gt;%22+(a.linkUrl?'&lt;p&gt;&lt;a href=%22'+f(a.linkUrl)+'%22&gt;'+f(a.linkUrl)+%22&lt;/a&gt;&lt;/p&gt;%22:%22%22)+E(a.body)+'&lt;hr&gt;&lt;h2 style=%22font-size:16px%22&gt;Comments ('+d(o.comments)+%22)&lt;/h2&gt;%22+(o.comments||[]).map(c).join(%22%22)+%22&lt;/body&gt;&lt;/html&gt;%22}function d(o){return(o||[]).reduce(function(a,n){return a+1+d(n.replies)},0)}function p(o){var a=(o.post.subreddit||%22reddit%22)+%22_%22+(o.post.id||%22thread%22)+%22_%22+(o.post.title||%22%22).toLowerCase().replace(/[^a-z0-9]+/g,%22-%22).slice(0,50);return a.replace(/-+$/,%22%22)}function k(o,a){switch(a){case%22md%22:return s(o);case%22json%22:return u(o);case%22txt%22:return j(o);case%22html%22:return l(o);default:throw new Error(%22Unknown format: %22+a)}}var h={toMarkdown:s,toJSON:u,toText:j,toPrintHtml:l,render:k,fileBase:p,countComments:d};typeof module!=%22undefined%22&amp;&amp;module.exports?module.exports=h:T.RedditExport=h}(typeof globalThis!=%22undefined%22?globalThis:this),function(T){%22use strict%22;var w=%22__reddit_export_panel__%22;function x(l){if(l=l||document,!/(^|\.)old\.reddit\.com$/.test(location.hostname)||!/\/comments\//.test(location.pathname))throw new Error(`Open an old.reddit.com/r/.../comments/... thread first.%0ATry: `+U(location.href));return T.RedditParse.parseDocument(l,{url:location.href,toMarkdown:T.RedditHtmlToMd.htmlToMarkdown})}function U(l){try{return T.RedditParse.normalizeOldRedditUrl(l)}catch(d){return%22https://old.reddit.com/%22}}function u(l,d,p){var k=new Blob([d],{type:p+%22;charset=utf-8%22}),h=document.createElement(%22a%22);h.href=URL.createObjectURL(k),h.download=l,document.body.appendChild(h),h.click(),setTimeout(function(){URL.revokeObjectURL(h.href),h.remove()},1500)}function s(l){var d=T.RedditExport.toPrintHtml(l),p=window.open(%22%22,%22_blank%22);if(!p){u(T.RedditExport.fileBase(l)+%22.html%22,d,%22text/html%22),alert(%22Popup blocked \u2014 saved printable .html instead. Open it and use Print \u2192 Save as PDF.%22);return}p.document.open(),p.document.write(d),p.document.close(),setTimeout(function(){p.focus(),p.print()},400)}function g(l,d){var p=T.RedditExport,k=p.fileBase(l);if(d===%22md%22)return u(k+%22.md%22,p.toMarkdown(l),%22text/markdown%22);if(d===%22json%22)return u(k+%22.json%22,p.toJSON(l),%22application/json%22);if(d===%22txt%22)return u(k+%22.txt%22,p.toText(l),%22text/plain%22);if(d===%22copy%22){var h=p.toMarkdown(l);return(navigator.clipboard?navigator.clipboard.writeText(h):Promise.reject()).then(function(){j(%22Markdown copied%22)},function(){u(k+%22.md%22,h,%22text/markdown%22)})}if(d===%22pdf%22)return s(l)}function j(l){var d=document.querySelector(%22%23%22+w+%22 .re-status%22);d&amp;&amp;(d.textContent=l)}function f(l){l=l||{};var d=document.getElementById(w);if(!(d&amp;&amp;(d.remove(),!l.persistent))){var p,k;try{p=x(document)}catch(c){k=c}if(k){alert(%22Reddit export: %22+k.message);return}var h=document.createElement(%22div%22);h.id=w,h.setAttribute(%22style%22,[%22position:fixed%22,l.docked?%22top:0;left:0;right:0%22:%22top:12px;right:12px%22,%22z-index:2147483647%22,%22background:%231a1a1b%22,%22color:%23eee%22,%22font:13px/1.3 system-ui,sans-serif%22,%22padding:8px 10px%22,l.docked?%22border-bottom:2px solid %23ff4500%22:%22border:2px solid %23ff4500;border-radius:8px%22,%22box-shadow:0 4px 16px rgba(0,0,0,.35)%22,%22display:flex%22,%22gap:6px%22,%22align-items:center%22,%22flex-wrap:wrap%22].join(%22;%22));var o=document.createElement(%22span%22);o.textContent=%22Export: %22+T.RedditExport.countComments(p.comments)+%22 comments%22+(p.stats.moreLinksSkipped?%22 (+%22+p.stats.moreLinksSkipped+%22 unexpanded)%22:%22%22),o.style.marginRight=%226px%22,h.appendChild(o),[[%22md%22,%22MD%22],[%22json%22,%22JSON%22],[%22txt%22,%22TXT%22],[%22pdf%22,%22Print \u2192 PDF%22],[%22copy%22,%22Copy MD%22]].forEach(function(c){var v=document.createElement(%22button%22);v.textContent=c[1],v.setAttribute(%22style%22,%22background:%23ff4500;color:%23fff;border:0;border-radius:4px;padding:4px 9px;cursor:pointer;font:600 12px system-ui,sans-serif%22),v.onclick=function(){try{p=x(document),g(p,c[0]),j(c[1]+%22 \u2713%22)}catch(N){alert(%22Reddit export: %22+N.message)}},h.appendChild(v)});var a=document.createElement(%22span%22);if(a.className=%22re-status%22,a.style.cssText=%22color:%239c9;margin-left:4px%22,h.appendChild(a),!l.persistent){var n=document.createElement(%22button%22);n.textContent=%22\xD7%22,n.title=%22Close%22,n.setAttribute(%22style%22,%22background:none;color:%23aaa;border:0;font-size:18px;cursor:pointer;margin-left:4px%22),n.onclick=function(){h.remove()},h.appendChild(n)}return document.body.appendChild(h),p}}var E={showPanel:f,parseHere:x,exportAs:g,download:u,printPdf:s};T.RedditExportUI=E}(typeof globalThis!=%22undefined%22?globalThis:this),globalThis.RedditExportUI.showPanel()})();" title="Drag me to your bookmarks bar">⇩ Reddit Export</a>
+      <button class="sec" id="copyBm">Copy bookmarklet code</button>
+      <span class="out" id="bmMsg"></span>
+    </div>
+    <ol>
+      <li><b>Drag</b> the orange-bordered button to your bookmarks bar — or click <i>Copy</i>, make a new bookmark, paste the code as its URL.</li>
+      <li><small>Bookmarklet size: 17858 chars. Firefox users can also load the <code>extension/</code> folder (see README).</small></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>2 · Open the thread on old.reddit</h2>
+    <input id="url" placeholder="Paste any reddit.com / www.reddit.com / old.reddit.com thread URL">
+    <div class="row"><button id="go">Open on old.reddit</button><button class="sec" id="copyUrl">Copy old.reddit URL</button></div>
+    <div class="out" id="urlMsg"></div>
+    <ol><li>Then click the <b>Reddit Export</b> bookmark on that page → toolbar with <b>MD · JSON · TXT · Print→PDF · Copy MD</b>.</li>
+      <li><small>Only comments already on the page are exported. For more, open with <code>?limit=500</code> or click "load more comments" first.</small></li></ol>
+  </section>
+
+  <section>
+    <h2>3 · Fallback: paste page source</h2>
+    <p class="out" style="margin-top:0">Browsers block this page from fetching reddit (CORS). Instead: on the old.reddit thread press <code>Ctrl/⌘+U</code> → select all → copy → paste here. (Or Save Page As → open the .html and copy.)</p>
+    <input id="srcUrl" placeholder="(optional) thread URL for the export metadata">
+    <textarea id="src" placeholder="Paste old.reddit page HTML here…" style="margin-top:8px"></textarea>
+    <div class="row">
+      <button id="parse">Parse</button>
+      <button class="sec" data-f="md" disabled>MD</button><button class="sec" data-f="json" disabled>JSON</button>
+      <button class="sec" data-f="txt" disabled>TXT</button><button class="sec" data-f="pdf" disabled>Print → PDF</button>
+      <span class="out" id="parseMsg"></span>
+    </div>
+    <pre id="preview" hidden></pre>
+  </section>
+</main>
+
+<script>
+/* ---- lib/parse-old-reddit.js ---- */
+/*
+ * parse-old-reddit.js — shared old.reddit.com thread parser.
+ * Works in the browser (native DOM) and in Node (cheerio) via a tiny adapter.
+ * Plain script: no imports, so it can be inlined into the bookmarklet / extension.
+ */
+(function (root) {
+  'use strict';
+
+  /* ---------- URL helpers ---------- */
+  function normalizeOldRedditUrl(input) {
+    if (!input) throw new Error('No URL given');
+    var s = String(input).trim();
+    if (!/^https?:\/\//i.test(s)) s = 'https://' + s;
+    var u = new URL(s);
+    var host = u.hostname.toLowerCase();
+    if (host === 'redd.it') throw new Error('Short redd.it links are not supported; open the thread and copy its full URL');
+    if (!/(^|\.)reddit\.com$/.test(host)) throw new Error('Not a reddit.com URL: ' + input);
+    u.protocol = 'https:';
+    u.hostname = 'old.reddit.com';
+    if (!/\/comments\/[a-z0-9]+/i.test(u.pathname)) throw new Error('Not a thread (/comments/) URL: ' + input);
+    u.hash = '';
+    // drop tracking params, keep sort/limit/context
+    var keep = new URLSearchParams();
+    ['sort', 'limit', 'context', 'depth'].forEach(function (k) { if (u.searchParams.has(k)) keep.set(k, u.searchParams.get(k)); });
+    u.search = keep.toString() ? '?' + keep.toString() : '';
+    return u.toString();
+  }
+
+  /* ---------- adapters ---------- */
+  // Adapter interface: find(el, sel)[], children(el, cls)[], attr(el,n), text(el), html(el), hasClass(el,c), docRoot
+  function domAdapter(doc) {
+    return {
+      root: doc,
+      find: function (el, sel) { return Array.prototype.slice.call((el || doc).querySelectorAll(sel)); },
+      children: function (el, cls) {
+        if (!el) return [];
+        return Array.prototype.filter.call(el.children, function (c) { return matchesAll(c.classList, cls); });
+      },
+      attr: function (el, n) { return el ? el.getAttribute(n) : null; },
+      text: function (el) { return el ? (el.textContent || '').trim() : ''; },
+      html: function (el) { return el ? el.innerHTML : ''; },
+      node: function (el) { return el; },
+      hasClass: function (el, c) { return !!el && el.classList.contains(c); }
+    };
+    function matchesAll(classList, cls) {
+      return cls.split('.').filter(Boolean).every(function (c) { return classList.contains(c); });
+    }
+  }
+
+  function cheerioAdapter($) {
+    return {
+      root: null,
+      find: function (el, sel) { return (el ? $(el).find(sel) : $(sel)).toArray(); },
+      children: function (el, cls) { return el ? $(el).children('.' + cls.split('.').filter(Boolean).join('.')).toArray() : []; },
+      attr: function (el, n) { var v = el ? $(el).attr(n) : undefined; return v === undefined ? null : v; },
+      text: function (el) { return el ? $(el).text().trim() : ''; },
+      html: function (el) { return el ? ($(el).html() || '') : ''; },
+      node: function (el) { return el; },
+      hasClass: function (el, c) { return !!el && $(el).hasClass(c); }
+    };
+  }
+
+  /* ---------- small utils ---------- */
+  function first(a) { return a && a.length ? a[0] : null; }
+  function toInt(v) {
+    if (v === null || v === undefined || v === '') return null;
+    var n = parseInt(String(v).replace(/[^0-9-]/g, ''), 10);
+    return isNaN(n) ? null : n;
+  }
+  function toIso(v) {
+    if (!v) return null;
+    var d = new Date(v);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  function stripPrefix(id) { return id ? String(id).replace(/^t[0-9]_/, '') : ''; }
+  function normAuthor(a) { return a && a !== '[deleted]' ? (/^u\//.test(a) ? a : 'u/' + a) : '[deleted]'; }
+
+  // the element's own .entry (not a descendant reply's)
+  function ownEntry(A, thing) { return first(A.children(thing, 'entry')); }
+
+  function bodyOf(A, entry, toMd) {
+    if (!entry) return '';
+    var md = first(A.find(entry, '.usertext-body .md'));
+    if (!md) return '';
+    return toMd(A.html(md), A.node(md)).trim();
+  }
+
+  function scoreOf(A, thing, entry) {
+    var s = toInt(A.attr(thing, 'data-score'));
+    if (s !== null) return s;
+    if (entry) {
+      // comments: <span class="score unvoted" title="12">12 points</span>
+      var sc = first(A.find(entry, '.tagline .score.unvoted')) || first(A.find(entry, '.score.unvoted')) || first(A.find(entry, '.score'));
+      if (sc) {
+        var t = toInt(A.attr(sc, 'title'));
+        if (t !== null) return t;
+        var x = toInt(A.text(sc));
+        if (x !== null) return x;
+      }
+    }
+    var ms = first(A.children(thing, 'midcol'));
+    if (ms) { var u = first(A.find(ms, '.score.unvoted')); if (u) { var v = toInt(A.attr(u, 'title')) ; if (v === null) v = toInt(A.text(u)); if (v !== null) return v; } }
+    return null; // hidden / unknown
+  }
+
+  function createdOf(A, entry) {
+    if (!entry) return null;
+    var t = first(A.find(entry, '.tagline time[datetime]')) || first(A.find(entry, 'time[datetime]'));
+    return t ? toIso(A.attr(t, 'datetime')) : null;
+  }
+
+  function authorOf(A, thing, entry) {
+    var a = A.attr(thing, 'data-author');
+    if (!a && entry) { var el = first(A.find(entry, '.tagline a.author')) || first(A.find(entry, 'a.author')); a = el ? A.text(el) : null; }
+    return normAuthor(a);
+  }
+
+  /* ---------- comments ---------- */
+  function isSkippable(A, thing) {
+    return A.hasClass(thing, 'morechildren') || A.hasClass(thing, 'morerecursion');
+  }
+
+  function parseComment(A, thing, depth, toMd, stats, opts) {
+    var entry = ownEntry(A, thing);
+    var deleted = A.hasClass(thing, 'deleted');
+    var c = {
+      id: stripPrefix(A.attr(thing, 'data-fullname') || A.attr(thing, 'id')),
+      author: deleted ? '[deleted]' : authorOf(A, thing, entry),
+      score: scoreOf(A, thing, entry),
+      createdAt: createdOf(A, entry),
+      body: bodyOf(A, entry, toMd),
+      depth: depth,
+      replies: []
+    };
+    if (A.hasClass(thing, 'stickied')) c.stickied = true;
+    if (A.hasClass(thing, 'collapsed')) c.collapsed = true;
+    if (deleted && !c.body) c.body = '[deleted]';
+    stats.count++;
+    if (opts.maxDepth == null || depth < opts.maxDepth) {
+      var child = first(A.children(thing, 'child'));
+      var st = child ? first(A.children(child, 'sitetable')) : null;
+      c.replies = parseCommentList(A, st, depth + 1, toMd, stats, opts);
+    }
+    return c;
+  }
+
+  function parseCommentList(A, sitetable, depth, toMd, stats, opts) {
+    if (!sitetable) return [];
+    var out = [];
+    A.children(sitetable, 'thing').forEach(function (t) {
+      if (isSkippable(A, t)) { stats.more++; return; }
+      if (!A.hasClass(t, 'comment')) return;
+      out.push(parseComment(A, t, depth, toMd, stats, opts));
+    });
+    return out;
+  }
+
+  /* ---------- post ---------- */
+  function parsePost(A, toMd) {
+    var thing = first(A.find(null, '#siteTable .thing.link')) || first(A.find(null, '.thing.link'));
+    if (!thing) throw new Error('No post found (#siteTable .thing.link). Is this an old.reddit.com comments page?');
+    var entry = ownEntry(A, thing) || thing;
+    var titleEl = first(A.find(entry, 'a.title')) || first(A.find(thing, 'a.title'));
+    var flairEl = first(A.find(entry, '.linkflairlabel'));
+    var flair = flairEl ? (A.attr(flairEl, 'title') || A.text(flairEl)) : null;
+    var sub = A.attr(thing, 'data-subreddit');
+    if (!sub) { var s = first(A.find(entry, 'a.subreddit')); sub = s ? A.text(s).replace(/^\/?r\//, '') : ''; }
+    var post = {
+      id: stripPrefix(A.attr(thing, 'data-fullnameid') || A.attr(thing, 'data-fullname') || A.attr(thing, 'id')),
+      subreddit: sub || '',
+      title: titleEl ? A.text(titleEl) : '',
+      author: authorOf(A, thing, entry),
+      score: scoreOf(A, thing, entry),
+      createdAt: toIso(A.attr(thing, 'data-timestamp') ? Number(A.attr(thing, 'data-timestamp')) : null) || createdOf(A, entry),
+      body: bodyOf(A, entry, toMd),
+      flair: flair || null,
+      nsfw: A.attr(thing, 'data-nsfw') === 'true' || A.hasClass(thing, 'over18')
+    };
+    var linkUrl = A.attr(thing, 'data-url');
+    if (linkUrl && !/\/comments\//.test(linkUrl)) post.linkUrl = /^\//.test(linkUrl) ? 'https://old.reddit.com' + linkUrl : linkUrl;
+    var permalink = A.attr(thing, 'data-permalink');
+    return { post: post, permalink: permalink ? 'https://old.reddit.com' + permalink : null };
+  }
+
+  /**
+   * parseThread(adapter, { url, toMarkdown(html, node), maxDepth })
+   */
+  function parseThread(A, opts) {
+    opts = opts || {};
+    var toMd = opts.toMarkdown || function (html, node) { return node && node.textContent != null ? node.textContent : String(html).replace(/<[^>]+>/g, ''); };
+    var p = parsePost(A, toMd);
+    var area = first(A.find(null, '.commentarea'));
+    var top = area ? first(A.children(area, 'sitetable')) : null;
+    var stats = { count: 0, more: 0 };
+    var comments = parseCommentList(A, top, 0, toMd, stats, opts);
+    var url = opts.url || p.permalink || '';
+    try { if (url) url = normalizeOldRedditUrl(url); } catch (e) { /* keep raw */ }
+    return {
+      url: url,
+      fetchedAt: new Date().toISOString(),
+      post: p.post,
+      comments: comments,
+      stats: { commentsParsed: stats.count, moreLinksSkipped: stats.more }
+    };
+  }
+
+  function parseDocument(doc, opts) { return parseThread(domAdapter(doc), opts); }
+  function parseCheerio($, opts) { return parseThread(cheerioAdapter($), opts); }
+
+  function countComments(list) {
+    return (list || []).reduce(function (n, c) { return n + 1 + countComments(c.replies); }, 0);
+  }
+
+  var api = {
+    normalizeOldRedditUrl: normalizeOldRedditUrl,
+    parseThread: parseThread,
+    parseDocument: parseDocument,
+    parseCheerio: parseCheerio,
+    domAdapter: domAdapter,
+    cheerioAdapter: cheerioAdapter,
+    countComments: countComments
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.RedditParse = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+/* ---- lib/html-to-md-dom.js ---- */
+/*
+ * html-to-md-dom.js — tiny DOM → Markdown converter for the browser (bookmarklet / extension / HTML tool).
+ * Node uses turndown instead (see lib/node-parse.js). Handles what reddit's .md divs contain.
+ */
+(function (root) {
+  'use strict';
+  function conv(node, ctx) {
+    ctx = ctx || { list: [] };
+    if (node.nodeType === 3) return node.nodeValue.replace(/\s+/g, ' ');
+    if (node.nodeType !== 1) return '';
+    var tag = node.tagName.toLowerCase();
+    var kids = function (c) { return Array.prototype.map.call(node.childNodes, function (n) { return conv(n, c || ctx); }).join(''); };
+    switch (tag) {
+      case 'p': return '\n\n' + kids().trim() + '\n\n';
+      case 'br': return '  \n';
+      case 'strong': case 'b': return '**' + kids() + '**';
+      case 'em': case 'i': return '*' + kids() + '*';
+      case 'del': case 's': return '~~' + kids() + '~~';
+      case 'sup': return '^(' + kids() + ')';
+      case 'code': return node.parentNode && node.parentNode.tagName && node.parentNode.tagName.toLowerCase() === 'pre' ? node.textContent : '`' + node.textContent + '`';
+      case 'pre': return '\n\n```\n' + node.textContent.replace(/\n$/, '') + '\n```\n\n';
+      case 'a': {
+        var href = node.getAttribute('href') || '';
+        if (href.charAt(0) === '/') href = 'https://old.reddit.com' + href;
+        var t = kids().trim();
+        return href ? '[' + (t || href) + '](' + href + ')' : t;
+      }
+      case 'h1': case 'h2': case 'h3': case 'h4': case 'h5': case 'h6':
+        return '\n\n' + '######'.slice(0, +tag[1]) + ' ' + kids().trim() + '\n\n';
+      case 'hr': return '\n\n---\n\n';
+      case 'blockquote':
+        return '\n\n' + mdOf(node).split('\n').map(function (l) { return '> ' + l; }).join('\n') + '\n\n';
+      case 'ul': case 'ol': {
+        var i = 0, ordered = tag === 'ol', depth = ctx.list.length;
+        var items = Array.prototype.filter.call(node.children, function (c) { return c.tagName.toLowerCase() === 'li'; }).map(function (li) {
+          i++;
+          var inner = Array.prototype.map.call(li.childNodes, function (n) { return conv(n, { list: ctx.list.concat(tag) }); }).join('').replace(/\n{3,}/g, '\n\n').trim();
+          var pad = new Array(depth + 1).join('    ');
+          return pad + (ordered ? i + '. ' : '- ') + inner.replace(/\n/g, '\n' + pad + '  ');
+        });
+        return '\n\n' + items.join('\n') + '\n\n';
+      }
+      case 'table': {
+        var rows = Array.prototype.map.call(node.querySelectorAll('tr'), function (tr) {
+          return '| ' + Array.prototype.map.call(tr.children, function (td) { return mdOf(td).replace(/\|/g, '\\|').replace(/\n/g, ' '); }).join(' | ') + ' |';
+        });
+        if (rows.length) { var cols = (rows[0].match(/ \| /g) || []).length + 1; rows.splice(1, 0, '|' + new Array(cols + 1).join(' --- |')); }
+        return '\n\n' + rows.join('\n') + '\n\n';
+      }
+      case 'img': return '![' + (node.getAttribute('alt') || '') + '](' + (node.getAttribute('src') || '') + ')';
+      case 'script': case 'style': return '';
+      default: return kids();
+    }
+  }
+  function mdOf(node) {
+    return Array.prototype.map.call(node.childNodes, function (n) { return conv(n); }).join('')
+      .replace(/[ \t]+\n/g, function (m) { return /  \n$/.test(m) ? '  \n' : '\n'; })
+      .replace(/\n{3,}/g, '\n\n').trim();
+  }
+  function htmlToMarkdown(html, node) {
+    if (!node) node = new DOMParser().parseFromString(String(html), "text/html").body;
+    return mdOf(node);
+  }
+  var api = { htmlToMarkdown: htmlToMarkdown };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.RedditHtmlToMd = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+/* ---- lib/export.js ---- */
+/*
+ * export.js — render a parsed thread tree to Markdown / JSON / TXT / printable HTML (for PDF).
+ * Plain script, shared by Node, bookmarklet, HTML tool and Firefox extension.
+ * PDF: browser paths open toPrintHtml() in a window and call window.print();
+ *      CLI renders toPrintHtml() with Playwright page.pdf().
+ */
+(function (root) {
+  'use strict';
+  function fmtScore(s) { return s === null || s === undefined ? '?' : String(s); }
+  function fmtDate(d) { return d ? d.replace('T', ' ').replace(/\.\d+Z$/, 'Z') : 'unknown date'; }
+  function indent(text, prefix) { return text.split('\n').map(function (l) { return prefix + l; }).join('\n'); }
+
+  function toJSON(t) { return JSON.stringify(t, null, 2) + '\n'; }
+
+  function toMarkdown(t) {
+    var p = t.post, out = [];
+    out.push('# ' + (p.title || '(untitled)'));
+    out.push('');
+    var meta = ['r/' + p.subreddit, p.author, fmtScore(p.score) + ' points', fmtDate(p.createdAt)];
+    if (p.flair) meta.push('flair: ' + p.flair);
+    if (p.nsfw) meta.push('NSFW');
+    out.push('*' + meta.join(' · ') + '*  ');
+    out.push('Source: <' + t.url + '>  ');
+    out.push('Exported: ' + fmtDate(t.fetchedAt));
+    if (p.linkUrl) { out.push(''); out.push('Link: <' + p.linkUrl + '>'); }
+    if (p.body) { out.push(''); out.push(p.body); }
+    out.push('');
+    out.push('---');
+    out.push('');
+    out.push('## Comments (' + count(t.comments) + ')');
+    out.push('');
+    (function walk(list) {
+      list.forEach(function (c) {
+        var pre = new Array(c.depth + 1).join('> ');
+        out.push(pre + '**' + c.author + '** · ' + fmtScore(c.score) + ' pts · ' + fmtDate(c.createdAt));
+        out.push(pre.replace(/ $/, ''));
+        out.push(indent(c.body || '', pre));
+        out.push('');
+        walk(c.replies || []);
+      });
+    })(t.comments || []);
+    return out.join('\n').replace(/\n{3,}/g, '\n\n') + '\n';
+  }
+
+  function plain(md) {
+    return String(md || '')
+      .replace(/```[a-z]*\n?/g, '')
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '$1 ($2)')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, function (m, a, b) { return a === b ? a : a + ' (' + b + ')'; })
+      .replace(/(\*\*|__)(.*?)\1/g, '$2')
+      .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1$2')
+      .replace(/~~(.*?)~~/g, '$1')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/^#{1,6}\s+/gm, '')
+      .replace(/^>\s?/gm, '')
+      .replace(/\\([\\`*_{}\[\]()#+\-.!>|])/g, '$1');
+  }
+
+  function toText(t) {
+    var p = t.post, out = [];
+    out.push(p.title || '(untitled)');
+    out.push('r/' + p.subreddit + ' | ' + p.author + ' | ' + fmtScore(p.score) + ' points | ' + fmtDate(p.createdAt) + (p.nsfw ? ' | NSFW' : ''));
+    out.push('Source: ' + t.url);
+    if (p.linkUrl) out.push('Link: ' + p.linkUrl);
+    if (p.body) { out.push(''); out.push(plain(p.body)); }
+    out.push('');
+    out.push('==== Comments (' + count(t.comments) + ') ====');
+    (function walk(list) {
+      list.forEach(function (c) {
+        var pad = new Array(c.depth + 1).join('    ');
+        out.push('');
+        out.push(pad + c.author + ' | ' + fmtScore(c.score) + ' pts | ' + fmtDate(c.createdAt));
+        out.push(indent(plain(c.body), pad));
+        walk(c.replies || []);
+      });
+    })(t.comments || []);
+    return out.join('\n') + '\n';
+  }
+
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  // minimal md -> html for print: paragraphs, bold/italic, code, links, quotes kept simple
+  function mdToHtml(md) {
+    var blocks = String(md || '').split(/\n{2,}/);
+    return blocks.map(function (b) {
+      if (/^```/.test(b)) return '<pre>' + esc(b.replace(/^```[a-z]*\n?|```$/g, '')) + '</pre>';
+      var h = esc(b)
+        .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2">$1</a>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+        .replace(/~~(.+?)~~/g, '<del>$1</del>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
+      if (/^&gt; ?/.test(b)) return '<blockquote>' + h.replace(/^&gt; ?/gm, '').replace(/\n/g, '<br>') + '</blockquote>';
+      return '<p>' + h.replace(/\n/g, '<br>') + '</p>';
+    }).join('\n');
+  }
+
+  function toPrintHtml(t) {
+    var p = t.post;
+    var css = 'body{font:14px/1.5 Georgia,serif;max-width:780px;margin:24px auto;color:#111;padding:0 16px}' +
+      'h1{font-size:22px;margin:0 0 4px}.meta{color:#555;font:12px/1.4 system-ui,sans-serif;margin-bottom:12px}' +
+      '.c{border-left:2px solid #ccc;padding-left:10px;margin:10px 0 0 0;break-inside:avoid-page}' +
+      '.c .c{margin-left:8px}.a{font:600 12px system-ui,sans-serif;color:#246}.a span{font-weight:400;color:#777}' +
+      'pre{white-space:pre-wrap;background:#f4f4f4;padding:8px}blockquote{color:#555;border-left:3px solid #ddd;margin:0;padding-left:8px}' +
+      'a{color:#1a5fb4;word-break:break-all}@page{margin:14mm}';
+    function cm(c) {
+      return '<div class="c"><div class="a">' + esc(c.author) + ' <span>· ' + esc(fmtScore(c.score)) + ' pts · ' + esc(fmtDate(c.createdAt)) + '</span></div>' +
+        mdToHtml(c.body) + (c.replies || []).map(cm).join('') + '</div>';
+    }
+    return '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(p.title) + '</title><style>' + css + '</style></head><body>' +
+      '<h1>' + esc(p.title) + '</h1><div class="meta">r/' + esc(p.subreddit) + ' · ' + esc(p.author) + ' · ' + esc(fmtScore(p.score)) + ' points · ' + esc(fmtDate(p.createdAt)) +
+      (p.flair ? ' · ' + esc(p.flair) : '') + (p.nsfw ? ' · NSFW' : '') + '<br>' + esc(t.url) + '</div>' +
+      (p.linkUrl ? '<p><a href="' + esc(p.linkUrl) + '">' + esc(p.linkUrl) + '</a></p>' : '') +
+      mdToHtml(p.body) + '<hr><h2 style="font-size:16px">Comments (' + count(t.comments) + ')</h2>' +
+      (t.comments || []).map(cm).join('') + '</body></html>';
+  }
+
+  function count(list) { return (list || []).reduce(function (n, c) { return n + 1 + count(c.replies); }, 0); }
+
+  function fileBase(t) {
+    var s = (t.post.subreddit || 'reddit') + '_' + (t.post.id || 'thread') + '_' + (t.post.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50);
+    return s.replace(/-+$/, '');
+  }
+
+  function render(t, format) {
+    switch (format) {
+      case 'md': return toMarkdown(t);
+      case 'json': return toJSON(t);
+      case 'txt': return toText(t);
+      case 'html': return toPrintHtml(t);
+      default: throw new Error('Unknown format: ' + format);
+    }
+  }
+
+  var api = { toMarkdown: toMarkdown, toJSON: toJSON, toText: toText, toPrintHtml: toPrintHtml, render: render, fileBase: fileBase, countComments: count };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.RedditExport = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
+(function () {
+  var BOOKMARKLET = document.getElementById('bm').getAttribute('href');
+  var $ = function (id) { return document.getElementById(id); };
+  function msg(el, text, ok) { el.textContent = text; el.className = 'out ' + (ok ? 'ok' : 'err'); }
+  function copy(text, el, what) {
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(
+      function () { msg(el, what + ' copied', true); },
+      function () { window.prompt('Copy this:', text); });
+  }
+  $('bm').addEventListener('click', function (e) { e.preventDefault(); msg($('bmMsg'), 'Drag it to the bookmarks bar instead of clicking here.', false); });
+  $('copyBm').onclick = function () { copy(BOOKMARKLET, $('bmMsg'), 'Bookmarklet'); };
+
+  function norm() {
+    try { var u = RedditParse.normalizeOldRedditUrl($('url').value); msg($('urlMsg'), u, true); return u; }
+    catch (e) { msg($('urlMsg'), e.message, false); return null; }
+  }
+  $('url').addEventListener('input', function () { if ($('url').value.trim()) norm(); });
+  $('go').onclick = function () { var u = norm(); if (u) window.open(u, '_blank', 'noopener'); };
+  $('copyUrl').onclick = function () { var u = norm(); if (u) copy(u, $('urlMsg'), 'URL'); };
+
+  var thread = null;
+  var fmtBtns = document.querySelectorAll('button[data-f]');
+  $('parse').onclick = function () {
+    var html = $('src').value;
+    if (!html.trim()) return msg($('parseMsg'), 'Paste the page HTML first', false);
+    try {
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      var u = $('srcUrl').value.trim() || $('url').value.trim() || undefined;
+      thread = RedditParse.parseDocument(doc, { url: u, toMarkdown: function (h, node) { return RedditHtmlToMd.htmlToMarkdown(h, node); } });
+      var n = RedditExport.countComments(thread.comments);
+      msg($('parseMsg'), '“' + thread.post.title + '” — ' + n + ' comments' + (thread.stats.moreLinksSkipped ? ' (' + thread.stats.moreLinksSkipped + ' load-more links skipped)' : ''), true);
+      $('preview').hidden = false; $('preview').textContent = RedditExport.toMarkdown(thread).slice(0, 6000);
+      fmtBtns.forEach(function (b) { b.disabled = false; });
+    } catch (e) { thread = null; msg($('parseMsg'), e.message, false); fmtBtns.forEach(function (b) { b.disabled = true; }); }
+  };
+  function dl(name, text, mime) {
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: mime + ';charset=utf-8' }));
+    a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  }
+  fmtBtns.forEach(function (b) {
+    b.onclick = function () {
+      if (!thread) return;
+      var f = b.getAttribute('data-f'), base = RedditExport.fileBase(thread);
+      if (f === 'md') dl(base + '.md', RedditExport.toMarkdown(thread), 'text/markdown');
+      if (f === 'json') dl(base + '.json', RedditExport.toJSON(thread), 'application/json');
+      if (f === 'txt') dl(base + '.txt', RedditExport.toText(thread), 'text/plain');
+      if (f === 'pdf') {
+        var w = window.open('', '_blank');
+        if (!w) { dl(base + '.html', RedditExport.toPrintHtml(thread), 'text/html'); return; }
+        w.document.open(); w.document.write(RedditExport.toPrintHtml(thread)); w.document.close();
+        setTimeout(function () { w.focus(); w.print(); }, 400);
+      }
+    };
+  });
+})();
+</script>
+</body>
+</html>
