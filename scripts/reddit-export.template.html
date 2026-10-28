@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>old.reddit thread export</title>
+<style>
+  :root{--o:#ff4500;--bg:#0f1115;--card:#181b21;--fg:#e8e8e8;--mut:#9aa0a6}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+  main{max-width:860px;margin:0 auto;padding:28px 18px 60px} h1{margin:0 0 4px;font-size:24px} h1 span{color:var(--o)}
+  .sub{color:var(--mut);margin:0 0 22px} section{background:var(--card);border:1px solid #262a33;border-radius:10px;padding:16px 18px;margin:0 0 16px}
+  h2{font-size:16px;margin:0 0 10px} ol{margin:6px 0 0;padding-left:20px} li{margin:4px 0}
+  input,textarea{width:100%;background:#0b0d10;color:var(--fg);border:1px solid #333a45;border-radius:6px;padding:9px 10px;font:13px ui-monospace,Menlo,monospace}
+  textarea{min-height:140px;resize:vertical} .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+  button,.btn{background:var(--o);color:#fff;border:0;border-radius:6px;padding:8px 13px;font:600 13px system-ui,sans-serif;cursor:pointer;text-decoration:none;display:inline-block}
+  button.sec{background:#2c313b} .bm{background:#2c313b;border:2px dashed var(--o);cursor:grab}
+  .out{margin-top:8px;color:var(--mut);font-size:13px;word-break:break-all} .err{color:#ff7b72} .ok{color:#7ee787}
+  pre{background:#0b0d10;border:1px solid #262a33;border-radius:6px;padding:10px;max-height:320px;overflow:auto;font:12px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap}
+  code{background:#0b0d10;padding:1px 5px;border-radius:4px;font-size:12.5px} small{color:var(--mut)}
+</style>
+</head>
+<body>
+<main>
+  <h1><span>old.reddit</span> thread → MD / JSON / TXT / PDF</h1>
+  <p class="sub">Runs in your own logged-in browser. No public <code>.json</code>, no server. old.reddit.com comment threads only.</p>
+
+  <section>
+    <h2>1 · Install the bookmarklet (once)</h2>
+    <div class="row">
+      <a class="btn bm" id="bm" href="__BOOKMARKLET_HREF__" title="Drag me to your bookmarks bar">⇩ Reddit Export</a>
+      <button class="sec" id="copyBm">Copy bookmarklet code</button>
+      <span class="out" id="bmMsg"></span>
+    </div>
+    <ol>
+      <li><b>Drag</b> the orange-bordered button to your bookmarks bar — or click <i>Copy</i>, make a new bookmark, paste the code as its URL.</li>
+      <li><small>Bookmarklet size: __BOOKMARKLET_SIZE__ chars. Firefox users can also load the <code>extension/</code> folder (see README).</small></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>2 · Open the thread on old.reddit</h2>
+    <input id="url" placeholder="Paste any reddit.com / www.reddit.com / old.reddit.com thread URL">
+    <div class="row"><button id="go">Open on old.reddit</button><button class="sec" id="copyUrl">Copy old.reddit URL</button></div>
+    <div class="out" id="urlMsg"></div>
+    <ol><li>Then click the <b>Reddit Export</b> bookmark on that page → toolbar with <b>MD · JSON · TXT · Print→PDF · Copy MD</b>.</li>
+      <li><small>Only comments already on the page are exported. For more, open with <code>?limit=500</code> or click "load more comments" first.</small></li></ol>
+  </section>
+
+  <section>
+    <h2>3 · Fallback: paste page source</h2>
+    <p class="out" style="margin-top:0">Browsers block this page from fetching reddit (CORS). Instead: on the old.reddit thread press <code>Ctrl/⌘+U</code> → select all → copy → paste here. (Or Save Page As → open the .html and copy.)</p>
+    <input id="srcUrl" placeholder="(optional) thread URL for the export metadata">
+    <textarea id="src" placeholder="Paste old.reddit page HTML here…" style="margin-top:8px"></textarea>
+    <div class="row">
+      <button id="parse">Parse</button>
+      <button class="sec" data-f="md" disabled>MD</button><button class="sec" data-f="json" disabled>JSON</button>
+      <button class="sec" data-f="txt" disabled>TXT</button><button class="sec" data-f="pdf" disabled>Print → PDF</button>
+      <span class="out" id="parseMsg"></span>
+    </div>
+    <pre id="preview" hidden></pre>
+  </section>
+</main>
+
+<script>
+/*__LIBS__*/
+</script>
+<script>
+(function () {
+  var BOOKMARKLET = document.getElementById('bm').getAttribute('href');
+  var $ = function (id) { return document.getElementById(id); };
+  function msg(el, text, ok) { el.textContent = text; el.className = 'out ' + (ok ? 'ok' : 'err'); }
+  function copy(text, el, what) {
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(
+      function () { msg(el, what + ' copied', true); },
+      function () { window.prompt('Copy this:', text); });
+  }
+  $('bm').addEventListener('click', function (e) { e.preventDefault(); msg($('bmMsg'), 'Drag it to the bookmarks bar instead of clicking here.', false); });
+  $('copyBm').onclick = function () { copy(BOOKMARKLET, $('bmMsg'), 'Bookmarklet'); };
+
+  function norm() {
+    try { var u = RedditParse.normalizeOldRedditUrl($('url').value); msg($('urlMsg'), u, true); return u; }
+    catch (e) { msg($('urlMsg'), e.message, false); return null; }
+  }
+  $('url').addEventListener('input', function () { if ($('url').value.trim()) norm(); });
+  $('go').onclick = function () { var u = norm(); if (u) window.open(u, '_blank', 'noopener'); };
+  $('copyUrl').onclick = function () { var u = norm(); if (u) copy(u, $('urlMsg'), 'URL'); };
+
+  var thread = null;
+  var fmtBtns = document.querySelectorAll('button[data-f]');
+  $('parse').onclick = function () {
+    var html = $('src').value;
+    if (!html.trim()) return msg($('parseMsg'), 'Paste the page HTML first', false);
+    try {
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      var u = $('srcUrl').value.trim() || $('url').value.trim() || undefined;
+      thread = RedditParse.parseDocument(doc, { url: u, toMarkdown: function (h, node) { return RedditHtmlToMd.htmlToMarkdown(h, node); } });
+      var n = RedditExport.countComments(thread.comments);
+      msg($('parseMsg'), '“' + thread.post.title + '” — ' + n + ' comments' + (thread.stats.moreLinksSkipped ? ' (' + thread.stats.moreLinksSkipped + ' load-more links skipped)' : ''), true);
+      $('preview').hidden = false; $('preview').textContent = RedditExport.toMarkdown(thread).slice(0, 6000);
+      fmtBtns.forEach(function (b) { b.disabled = false; });
+    } catch (e) { thread = null; msg($('parseMsg'), e.message, false); fmtBtns.forEach(function (b) { b.disabled = true; }); }
+  };
+  function dl(name, text, mime) {
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: mime + ';charset=utf-8' }));
+    a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  }
+  fmtBtns.forEach(function (b) {
+    b.onclick = function () {
+      if (!thread) return;
+      var f = b.getAttribute('data-f'), base = RedditExport.fileBase(thread);
+      if (f === 'md') dl(base + '.md', RedditExport.toMarkdown(thread), 'text/markdown');
+      if (f === 'json') dl(base + '.json', RedditExport.toJSON(thread), 'application/json');
+      if (f === 'txt') dl(base + '.txt', RedditExport.toText(thread), 'text/plain');
+      if (f === 'pdf') {
+        var w = window.open('', '_blank');
+        if (!w) { dl(base + '.html', RedditExport.toPrintHtml(thread), 'text/html'); return; }
+        w.document.open(); w.document.write(RedditExport.toPrintHtml(thread)); w.document.close();
+        setTimeout(function () { w.focus(); w.print(); }, 400);
+      }
+    };
+  });
+})();
+</script>
+</body>
+</html>
