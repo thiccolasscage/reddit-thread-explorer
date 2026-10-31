@@ -147,11 +147,25 @@
     return c;
   }
 
+  // "load more comments" carries the hidden ids in its onclick: morechildren(this, 't3_x', 'sort', 'id1,id2', ...)
+  // "continue this thread" links to the parent comment's permalink page.
+  function moreStub(A, thing, depth) {
+    var stub = { type: A.hasClass(thing, 'morerecursion') ? 'recursion' : 'children', depth: depth, ids: [], url: null };
+    var a = first(A.find(thing, '.morecomments a')) || first(A.find(thing, '.deepthread a')) || first(A.find(thing, 'a'));
+    var m = /morechildren\(\s*this\s*,\s*'[^']*'\s*,\s*'[^']*'\s*,\s*'([^']*)'/.exec(A.attr(a, 'onclick') || '');
+    if (m) stub.ids = m[1].split(',').map(function (x) { return stripPrefix(x.trim()); }).filter(Boolean);
+    var href = A.attr(a, 'href') || '';
+    if (stub.type === 'recursion' && /\/comments\//.test(href)) {
+      try { stub.url = normalizeOldRedditUrl(new URL(href, 'https://old.reddit.com').toString()); } catch (e) { /* unusable */ }
+    }
+    return stub;
+  }
+
   function parseCommentList(A, sitetable, depth, toMd, stats, opts) {
     if (!sitetable) return [];
     var out = [];
     A.children(sitetable, 'thing').forEach(function (t) {
-      if (isSkippable(A, t)) { stats.more++; return; }
+      if (isSkippable(A, t)) { stats.more++; if (opts.keepMore) out.push({ __more: moreStub(A, t, depth) }); return; }
       if (!A.hasClass(t, 'comment')) return;
       out.push(parseComment(A, t, depth, toMd, stats, opts));
     });
@@ -211,7 +225,101 @@
   function parseCheerio($, opts) { return parseThread(cheerioAdapter($), opts); }
 
   function countComments(list) {
-    return (list || []).reduce(function (n, c) { return n + 1 + countComments(c.replies); }, 0);
+    return (list || []).reduce(function (n, c) { return c.__more ? n : n + 1 + countComments(c.replies); }, 0);
+  }
+
+  /* ---------- load-more expansion (HTML pages only, never the .json API) ---------- */
+  function walk(list, fn, parent) {
+    (list || []).slice().forEach(function (c) { fn(c, parent || list); if (!c.__more) walk(c.replies, fn, c.replies); });
+  }
+  function rebase(list, depth) { (list || []).forEach(function (c) { if (c.__more) c.__more.depth = depth; else { c.depth = depth; rebase(c.replies, depth + 1); } }); }
+  function idsIn(list, set) { walk(list, function (c) { if (!c.__more) set[c.id] = true; }); return set; }
+  function dropSeen(list, seen) {
+    return (list || []).filter(function (c) { return c.__more || !seen[c.id]; }).map(function (c) {
+      if (!c.__more) c.replies = dropSeen(c.replies, seen);
+      return c;
+    });
+  }
+  // Permalink base for comments in this thread: https://old.reddit.com/r/sub/comments/<post>/<slug>/
+  function commentBase(thread) {
+    var u = new URL(thread.url || 'https://old.reddit.com/');
+    var m = /^(\/r\/[^/]+)?\/comments\/([a-z0-9]+)(?:\/([^/]+))?/i.exec(u.pathname);
+    if (!m) return null;
+    var sub = m[1] || (thread.post && thread.post.subreddit ? '/r/' + thread.post.subreddit : '');
+    return { prefix: 'https://old.reddit.com' + sub + '/comments/' + m[2] + '/' + (m[3] || '_') + '/', search: u.search };
+  }
+  function stripMore(list) {
+    return (list || []).filter(function (c) { return !c.__more; }).map(function (c) { c.replies = stripMore(c.replies); return c; });
+  }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  /**
+   * expandMore(thread, { fetchThread(url) -> Promise<thread parsed with keepMore>, maxFetches, delayMs, onProgress })
+   * thread must come from parseThread(..., { keepMore: true }). Fetches each "continue this thread" page and each
+   * hidden comment's own permalink page, grafts the subtrees in place, then strips any stubs left over
+   * (pass keepStubs: true to leave them in, so a later call can continue where this one stopped).
+   */
+  async function expandMore(thread, opts) {
+    opts = opts || {};
+    var max = opts.maxFetches == null ? 40 : opts.maxFetches, delay = opts.delayMs == null ? 1000 : opts.delayMs;
+    var base = commentBase(thread), seen = idsIn(thread.comments, {}), queue = [];
+    var st = { pagesFetched: 0, moreLinksExpanded: 0, errors: 0, stopped: null };
+    function enqueue(list, arr) { walk(list, function (c, a) { if (c.__more) queue.push({ arr: a, ph: c }); }, arr); }
+    enqueue(thread.comments, thread.comments);
+    async function get(url) {
+      if (st.pagesFetched && delay) await sleep(delay);
+      st.pagesFetched++;
+      if (opts.onProgress) opts.onProgress({ fetched: st.pagesFetched, max: max, pending: queue.length });
+      return opts.fetchThread(url);
+    }
+    while (queue.length && !st.stopped) {
+      var item = queue.shift(), stub = item.ph.__more, pos = item.arr.indexOf(item.ph);
+      if (pos < 0) continue;
+      var roots = [], left = [];
+      try {
+        if (stub.type === 'recursion' && stub.url) {
+          if (st.pagesFetched >= max) { st.stopped = 'limit'; break; }
+          var t2 = await get(stub.url);
+          var pid = (/\/comments\/[^/]+\/[^/]+\/([a-z0-9]+)\/?(\?|$)/i.exec(stub.url) || [])[1];
+          var tops = t2.comments.filter(function (c) { return !c.__more; });
+          var parent = tops.filter(function (c) { return c.id === pid; })[0] || tops[0];
+          roots = parent ? parent.replies : [];
+        } else if (stub.type === 'children' && base && stub.ids.length) {
+          var ids = stub.ids.filter(function (id) { return !seen[id]; }), got = {};
+          for (var i = 0; i < ids.length; i++) {
+            if (got[ids[i]]) continue; // arrived inside an earlier subtree
+            if (st.pagesFetched >= max) { left = ids.slice(i); st.stopped = 'limit'; break; }
+            var t3 = await get(base.prefix + ids[i] + '/' + base.search);
+            var root = t3.comments.filter(function (c) { return c.id === ids[i]; })[0];
+            if (root) { roots.push(root); idsIn([root], got); }
+          }
+          // a listed id can be a descendant of another listed id: keep only the outermost
+          var inner = {};
+          roots.forEach(function (r) { idsIn(r.replies, inner); });
+          roots = roots.filter(function (r) { return !inner[r.id]; });
+        } else continue; // no ids / no link: nothing to fetch
+      } catch (e) {
+        st.errors++;
+        if (e && (e.status === 403 || e.status === 429)) st.stopped = 'HTTP ' + e.status;
+        continue;
+      }
+      roots = dropSeen(roots, seen);
+      idsIn(roots, seen);
+      rebase(roots, stub.depth);
+      if (left.length) { stub.ids = left; roots.push(item.ph); } else st.moreLinksExpanded++;
+      item.arr.splice.apply(item.arr, [pos, 1].concat(roots));
+      enqueue(roots.filter(function (c) { return c !== item.ph; }), item.arr);
+    }
+    var remaining = 0;
+    walk(thread.comments, function (c) { if (c.__more) remaining++; });
+    if (!opts.keepStubs) thread.comments = stripMore(thread.comments);
+    thread.stats = {
+      commentsParsed: countComments(thread.comments), moreLinksSkipped: remaining,
+      moreLinksExpanded: st.moreLinksExpanded, pagesFetched: st.pagesFetched
+    };
+    if (st.stopped) thread.stats.expandStopped = st.stopped;
+    if (st.errors) thread.stats.fetchErrors = st.errors;
+    return thread;
   }
 
   var api = {
@@ -221,7 +329,9 @@
     parseCheerio: parseCheerio,
     domAdapter: domAdapter,
     cheerioAdapter: cheerioAdapter,
-    countComments: countComments
+    countComments: countComments,
+    expandMore: expandMore,
+    stripMore: function (t) { t.comments = stripMore(t.comments); return t; }
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.RedditParse = api;
@@ -443,13 +553,30 @@
 (function (root) {
   'use strict';
   var PANEL_ID = '__reddit_export_panel__';
+  var MAX_FETCHES = 40;
 
-  function parseHere(doc) {
+  function parseHere(doc, keepMore) {
     doc = doc || document;
     if (!/(^|\.)old\.reddit\.com$/.test(location.hostname) || !/\/comments\//.test(location.pathname)) {
       throw new Error('Open an old.reddit.com/r/.../comments/... thread first.\nTry: ' + toOld(location.href));
     }
-    return root.RedditParse.parseDocument(doc, { url: location.href, toMarkdown: root.RedditHtmlToMd.htmlToMarkdown });
+    return root.RedditParse.parseDocument(doc, { url: location.href, keepMore: keepMore, toMarkdown: root.RedditHtmlToMd.htmlToMarkdown });
+  }
+
+  // Same-origin fetch of an old.reddit comment page (HTML, with the user's own login), parsed with stubs kept.
+  function fetchThreadHere(url) {
+    return fetch(url, { credentials: 'include' }).then(function (r) {
+      if (!r.ok) { var e = new Error('HTTP ' + r.status + ' for ' + url); e.status = r.status; throw e; }
+      return r.text();
+    }).then(function (html) {
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      return root.RedditParse.parseDocument(doc, { url: url, keepMore: true, toMarkdown: root.RedditHtmlToMd.htmlToMarkdown });
+    });
+  }
+
+  function labelText(t) {
+    return 'Export: ' + root.RedditExport.countComments(t.comments) + ' comments' +
+      (t.stats.moreLinksSkipped ? ' (+' + t.stats.moreLinksSkipped + ' unexpanded)' : '');
   }
   function toOld(u) { try { return root.RedditParse.normalizeOldRedditUrl(u); } catch (e) { return 'https://old.reddit.com/'; } }
 
@@ -510,19 +637,45 @@
       'box-shadow:0 4px 16px rgba(0,0,0,.35)', 'display:flex', 'gap:6px', 'align-items:center', 'flex-wrap:wrap'
     ].join(';'));
     var label = document.createElement('span');
-    label.textContent = 'Export: ' + root.RedditExport.countComments(t.comments) + ' comments' +
-      (t.stats.moreLinksSkipped ? ' (+' + t.stats.moreLinksSkipped + ' unexpanded)' : '');
+    label.className = 're-label';
+    label.textContent = labelText(t);
     label.style.marginRight = '6px';
     p.appendChild(label);
+    var expanded = null; // set once "Expand" has run (stubs kept so another click continues); exports use a stripped copy
+    function current() { return expanded ? root.RedditParse.stripMore(JSON.parse(JSON.stringify(expanded))) : parseHere(document); }
     [['md', 'MD'], ['json', 'JSON'], ['txt', 'TXT'], ['pdf', 'Print → PDF'], ['copy', 'Copy MD']].forEach(function (b) {
       var btn = document.createElement('button');
       btn.textContent = b[1];
       btn.setAttribute('style', 'background:#ff4500;color:#fff;border:0;border-radius:4px;padding:4px 9px;cursor:pointer;font:600 12px system-ui,sans-serif');
       btn.onclick = function () {
-        try { t = parseHere(document); exportAs(t, b[0]); flash(b[1] + ' ✓'); } catch (e) { alert('Reddit export: ' + e.message); }
+        try { t = current(); exportAs(t, b[0]); flash(b[1] + ' ✓'); } catch (e) { alert('Reddit export: ' + e.message); }
       };
       p.appendChild(btn);
     });
+    if (t.stats.moreLinksSkipped) {
+      var ex = document.createElement('button');
+      ex.className = 're-expand';
+      ex.textContent = 'Expand ' + t.stats.moreLinksSkipped + ' more';
+      ex.title = 'Fetch "load more comments" / "continue this thread" pages (up to ' + MAX_FETCHES + ', ~1 per second)';
+      ex.setAttribute('style', 'background:#333;color:#fff;border:1px solid #ff4500;border-radius:4px;padding:4px 9px;cursor:pointer;font:600 12px system-ui,sans-serif');
+      ex.onclick = function () {
+        ex.disabled = true;
+        var t2 = expanded || parseHere(document, true);
+        root.RedditParse.expandMore(t2, {
+          fetchThread: fetchThreadHere, maxFetches: MAX_FETCHES, delayMs: 1000, keepStubs: true,
+          onProgress: function (s) { flash('Fetching page ' + s.fetched + '/' + s.max + '…'); }
+        }).then(function (done) {
+          expanded = done;
+          label.textContent = labelText(done);
+          var st = done.stats;
+          flash('+' + st.moreLinksExpanded + ' expanded from ' + st.pagesFetched + ' pages' +
+            (st.expandStopped === 'limit' ? ' (page limit: click again for more)' : st.expandStopped ? ' (stopped: ' + st.expandStopped + ')' : ''));
+          ex.disabled = !st.moreLinksSkipped || /HTTP/.test(st.expandStopped || '');
+          ex.textContent = st.moreLinksSkipped ? 'Expand ' + st.moreLinksSkipped + ' more' : 'Expanded ✓';
+        }, function (e) { ex.disabled = false; flash('Expand failed: ' + e.message); });
+      };
+      p.appendChild(ex);
+    }
     var st = document.createElement('span'); st.className = 're-status'; st.style.cssText = 'color:#9c9;margin-left:4px'; p.appendChild(st);
     if (!opts.persistent) {
       var x = document.createElement('button');

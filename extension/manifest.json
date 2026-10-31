@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
   "name": "old.reddit Thread Export",
-  "version": "0.1.0",
-  "description": "Export an old.reddit.com thread (post + comments) to Markdown, JSON, TXT, or Print→PDF. Parses the page you already have open; no API calls.",
+  "version": "0.2.0",
+  "description": "Export an old.reddit.com thread (post + comments) to Markdown, JSON, TXT, or Print→PDF. Parses the page you already have open (plus, on request, its load-more pages); no API calls.",
   "browser_specific_settings": {
     "gecko": {
       "id": "reddit-thread-export@local",

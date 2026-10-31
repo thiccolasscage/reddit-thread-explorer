@@ -73,6 +73,32 @@ const THREAD = 'https://old.reddit.com/r/testsub/comments/abc123/what_is_your_fa
   assert.match(alerted, /old\.reddit\.com\/r\/\.\.\.\/comments/);
   console.log('PASS non-thread page guard');
 
+  // load-more expansion from the toolbar: thread + permalink pages served from fixtures/more/
+  const MORE = 'https://old.reddit.com/r/testsub/comments/m1/more_test/';
+  const ctx2 = await browser.newContext({ acceptDownloads: true });
+  const fetched = [];
+  await ctx2.route('https://old.reddit.com/**', (r) => {
+    const rest = r.request().url().slice(MORE.length).replace(/\/.*$/, '');
+    if (rest) fetched.push(rest);
+    r.fulfill({ status: 200, contentType: 'text/html', body: fs.readFileSync(R('fixtures/more', (rest || 'thread') + '.html'), 'utf8') });
+  });
+  const p5 = await ctx2.newPage();
+  p5.on('pageerror', (e) => errors.push(e.message));
+  await p5.goto(MORE);
+  await p5.addScriptTag({ content: code });
+  assert.match(await p5.textContent('#__reddit_export_panel__ .re-label'), /3 comments \(\+2 unexpanded\)/);
+  await p5.click('#__reddit_export_panel__ .re-expand');
+  await p5.waitForFunction(() => /expanded from/.test(document.querySelector('#__reddit_export_panel__ .re-status').textContent), null, { timeout: 15000 });
+  assert.match(await p5.textContent('#__reddit_export_panel__ .re-label'), /^Export: 9 comments$/);
+  assert.equal(await p5.textContent('#__reddit_export_panel__ .re-expand'), 'Expanded ✓');
+  assert.deepEqual(fetched, ['a2', 'x1', 'x2', 'd3']);
+  const [dm] = await Promise.all([p5.waitForEvent('download'), p5.click('#__reddit_export_panel__ button:has-text("JSON")')]);
+  const jm = JSON.parse(fs.readFileSync(await dm.path(), 'utf8'));
+  assert.equal(jm.comments.length, 4);
+  assert.equal(jm.comments[0].replies[0].replies[0].replies[0].replies[0].author, 'u/ivy');
+  assert.ok(!JSON.stringify(jm).includes('__more'));
+  console.log('PASS bookmarklet Expand (3 → 9 comments, 4 page fetches, JSON has no stubs)');
+
   assert.deepEqual(errors, []);
   await browser.close();
 })().catch((e) => { console.error('FAIL', e); process.exit(1); });

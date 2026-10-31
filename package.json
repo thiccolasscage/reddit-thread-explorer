@@ -1,6 +1,6 @@
 {
   "name": "reddit-thread-export",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "old.reddit.com thread -> Markdown / JSON / TXT / PDF",
   "main": "cli.js",
@@ -8,7 +8,7 @@
     "reddit-export": "cli.js"
   },
   "scripts": {
-    "test": "node test/parse.test.js",
+    "test": "node test/parse.test.js && node test/expand.test.js",
     "test:browser": "node test/browser.test.js",
     "build": "node scripts/build-bookmarklet.js",
     "login": "node login.js",
