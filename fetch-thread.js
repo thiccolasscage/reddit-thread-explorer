@@ -5,17 +5,22 @@ const { normalizeOldRedditUrl } = require('./lib/parse-old-reddit');
 
 const PROFILE_DIR = path.join(__dirname, '.reddit-profile');
 
-async function fetchThreadHtml(url, { headless = true, timeoutMs = 45000 } = {}) {
-  const target = normalizeOldRedditUrl(url);
+// One logged-in browser for several page loads (the thread, then any load-more pages).
+async function openSession({ headless = true, timeoutMs = 45000 } = {}) {
   const ctx = await chromium.launchPersistentContext(PROFILE_DIR, {
     headless,
     viewport: { width: 1280, height: 900 },
     userAgent: undefined // real Chromium UA from the profile
   });
-  try {
-    const page = ctx.pages()[0] || (await ctx.newPage());
+  const page = ctx.pages()[0] || (await ctx.newPage());
+  async function fetchHtml(url) {
+    const target = normalizeOldRedditUrl(url);
     const res = await page.goto(target, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
-    if (res && res.status() >= 400) throw new Error(`HTTP ${res.status()} for ${target} (blocked or login expired? run: node login.js)`);
+    if (res && res.status() >= 400) {
+      const e = new Error(`HTTP ${res.status()} for ${target} (blocked or login expired? run: node login.js)`);
+      e.status = res.status();
+      throw e;
+    }
     const ok = await page.waitForSelector('#siteTable .thing.link', { timeout: timeoutMs }).catch(() => null);
     if (!ok) {
       const title = await page.title();
@@ -23,8 +28,16 @@ async function fetchThreadHtml(url, { headless = true, timeoutMs = 45000 } = {})
     }
     await page.waitForSelector('.commentarea', { timeout: 5000 }).catch(() => {});
     return { url: page.url(), html: await page.content() };
+  }
+  return { fetchHtml, close: () => ctx.close() };
+}
+
+async function fetchThreadHtml(url, opts = {}) {
+  const s = await openSession(opts);
+  try {
+    return await s.fetchHtml(url);
   } finally {
-    await ctx.close();
+    await s.close();
   }
 }
 
@@ -39,4 +52,4 @@ async function htmlToPdf(html, outPath) {
   }
 }
 
-module.exports = { fetchThreadHtml, htmlToPdf, PROFILE_DIR };
+module.exports = { openSession, fetchThreadHtml, htmlToPdf, PROFILE_DIR };

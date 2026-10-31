@@ -13,4 +13,7 @@ SFW lane. Not part of the NSFW Aisle 69 cleanup.
 - `npm test` must pass before pushing.
 
 ## v0 cuts
-No www/shreddit parsing, no public `.json` API, no SaaS/hosting, no full "load more" expansion.
+No www/shreddit parsing, no public `.json` API, no SaaS/hosting.
+
+## v0.2
+Opt-in load-more expansion (`expandMore` in `lib/parse-old-reddit.js`): fetches permalink HTML pages only, capped by `maxFetches`, stops on 403/429. Tests: `test/expand.test.js` + `fixtures/more/`.
