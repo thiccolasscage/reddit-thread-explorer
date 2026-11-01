@@ -39,6 +39,8 @@ node cli.js "<thread url>" --expand --format all                                
 Files are written to `out/<sub>_<id>_<slug>.<ext>`. PDFs are made by Playwright `page.pdf()` from the print template. Reddit returns **403 to logged-out headless/datacenter traffic**, so run `login.js` first.
 
 ## Tests (no Reddit needed)
+CI (`.github/workflows/test.yml`) runs all of these on every push to `main` and on every PR. It also fails if the generated files are out of date with `lib/`. Playwright is pinned to an exact version so the browser build matches.
+
 ```bash
 npm test               # parse.test.js (parser + exporters on fixtures/sample-thread.html) + expand.test.js (load-more on fixtures/more/)
 npm run test:browser   # headless Chromium: bookmarklet, extension scripts, HTML tool paste fallback, Expand button
@@ -76,6 +78,8 @@ reddit-thread-explorer/
 ├── fetch-thread.js               # 3. Playwright fetch using the saved login profile
 ├── login.js                      # 3. one-time Reddit login → .reddit-profile/
 ├── CLAUDE.md                     # agent handoff
+├── .github/workflows/test.yml    # CI: build-in-sync check, npm test, browser test
+├── LICENSE                       # MIT
 ├── package.json
 └── package-lock.json
 ```
@@ -99,3 +103,6 @@ To fetch the rest, use **Expand N more** in the toolbar (bookmarklet or extensio
 ## Limits (by design)
 - No www/shreddit parsing, no public `.json` or `/api/` calls, no multi-user hosting.
 - Load-more expansion costs one page load per hidden comment, so a thread with hundreds of hidden comments takes several runs (or a higher `--max-fetches`).
+
+## License
+MIT, see [LICENSE](LICENSE).
